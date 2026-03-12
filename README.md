@@ -29,7 +29,7 @@
 ### 配置
 
 #### 使用示例配置文件（开发环境）
-复制 `application-example.properties` 为 `application.properties`，并根据本地环境修改其中的数据库连接、Redis 连接和 JWT 密钥。
+复制`application-example.properties`为`application.properties`，并根据本地环境修改其中的数据库连接、Redis 连接和 JWT 密钥。
 
 ### 运行
 
