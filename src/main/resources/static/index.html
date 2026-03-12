@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>睡眠追踪 · 个人健康</title>
+    <!-- 引入 ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .header {
+            background: #1e2b3c;
+            color: white;
+            padding: 24px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 400;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .username {
+            font-weight: 500;
+            background: rgba(255,255,255,0.2);
+            padding: 6px 12px;
+            border-radius: 40px;
+        }
+        .logout-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.5);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: white;
+        }
+        .main {
+            padding: 32px;
+        }
+        /* 表单卡片（登录/注册） */
+        .auth-card {
+            max-width: 420px;
+            margin: 40px auto;
+            background: #f9fafc;
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.02);
+        }
+        .tabs {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .tab {
+            padding: 8px 0;
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #64748b;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        .tab.active {
+            color: #1e2b3c;
+            border-bottom-color: #1e2b3c;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #334155;
+            font-size: 0.9rem;
+        }
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: 0.2s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #1e2b3c;
+            box-shadow: 0 0 0 3px rgba(30,43,60,0.1);
+        }
+        .btn {
+            background: #1e2b3c;
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.2s;
+        }
+        .btn:hover {
+            background: #2c3e50;
+        }
+        .btn.secondary {
+            background: #e2e8f0;
+            color: #1e2b3c;
+        }
+        .btn.secondary:hover {
+            background: #cbd5e1;
+        }
+        .error {
+            color: #b91c1c;
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+        /* 主页内容 */
+        .dashboard {
+            display: none; /* 默认隐藏，登录后显示 */
+        }
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 500;
+            margin: 32px 0 16px;
+            color: #1e2b3c;
+        }
+        .section-title:first-of-type {
+            margin-top: 0;
+        }
+        .add-form {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            align-items: end;
+        }
+        .add-form .form-group {
+            margin-bottom: 0;
+        }
+        .add-form .btn {
+            grid-column: span 1;
+            min-width: 120px;
+        }
+        .records-list {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 16px;
+        }
+        .record-item {
+            background: white;
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .record-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+        }
+        .record-date {
+            font-weight: 600;
+            background: #e6edf5;
+            padding: 4px 12px;
+            border-radius: 40px;
+            color: #1e2b3c;
+        }
+        .record-time {
+            color: #475569;
+        }
+        .record-duration {
+            background: #dcfce7;
+            color: #166534;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-weight: 500;
+        }
+        .record-actions button {
+            background: none;
+            border: 1px solid #cbd5e1;
+            padding: 6px 12px;
+            border-radius: 30px;
+            margin-left: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .record-actions button:hover {
+            background: #f1f5f9;
+        }
+        .record-actions .delete:hover {
+            border-color: #b91c1c;
+            color: #b91c1c;
+        }
+        #chart {
+            width: 100%;
+            height: 350px;
+            margin-top: 20px;
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 16px;
+        }
+        .empty-state {
+            text-align: center;
+            color: #94a3b8;
+            padding: 40px 20px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- 头部区域，登录后显示用户名和注销按钮 -->
+    <div class="header">
+        <h1>😴 睡眠日志</h1>
+        <div class="user-info" id="userInfo" style="display: none;">
+            <span class="username" id="usernameDisplay"></span>
+            <button class="logout-btn" id="logoutBtn">退出</button>
+        </div>
+    </div>
+
+    <div class="main">
+        <!-- 未登录：显示登录/注册卡片 -->
+        <div id="authContainer" class="auth-card">
+            <div class="tabs">
+                <div class="tab active" id="loginTab" onclick="switchTab('login')">登录</div>
+                <div class="tab" id="registerTab" onclick="switchTab('register')">注册</div>
+            </div>
+
+            <!-- 登录表单 -->
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="loginUsername" placeholder="输入用户名" required>
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="loginPassword" placeholder="输入密码" required>
+                </div>
+                <button type="submit" class="btn">登录</button>
+            </form>
+
+            <!-- 注册表单（默认隐藏） -->
+            <form id="registerForm" style="display: none;" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="regUsername" placeholder="2-20位字符" required>
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="regPassword" placeholder="6-20位，包含字母和数字" required>
+                </div>
+                <div class="form-group">
+                    <label>邮箱</label>
+                    <input type="email" id="regEmail" placeholder="your@email.com" required>
+                </div>
+                <button type="submit" class="btn">注册</button>
+            </form>
+        </div>
+
+        <!-- 登录后：仪表盘 -->
+        <div id="dashboard" class="dashboard">
+            <!-- 添加记录表单 -->
+            <div class="section-title">➕ 记录新睡眠</div>
+            <form id="addRecordForm" class="add-form" onsubmit="handleAddRecord(event)">
+                <div class="form-group">
+                    <label>入睡时间</label>
+                    <input type="datetime-local" id="startTime" required>
+                </div>
+                <div class="form-group">
+                    <label>醒来时间</label>
+                    <input type="datetime-local" id="endTime" required>
+                </div>
+                <div class="form-group">
+                    <label>备注 (选填)</label>
+                    <input type="text" id="notes" placeholder="比如：睡得不错">
+                </div>
+                <button type="submit" class="btn">保存</button>
+            </form>
+
+            <!-- 最近7天图表 -->
+            <div class="section-title">📊 最近7天睡眠趋势</div>
+            <div id="chart"></div>
+
+            <!-- 历史记录列表 -->
+            <div class="section-title">📋 全部记录</div>
+            <div id="recordsList" class="records-list">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- 全局变量 ----------
+    const API_BASE = '';  // 空字符串表示同源（因为前端放在static下）
+    let token = localStorage.getItem('token');
+    let currentUser = localStorage.getItem('username');
+
+    // ---------- 初始化页面 ----------
+    window.onload = function() {
+        if (token && currentUser) {
+            showDashboard();
+            loadRecords();
+            loadWeeklyChart();
+        } else {
+            // 清除可能残留的token
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            showAuth();
+        }
+    };
+
+    // ---------- UI 切换 ----------
+    function showAuth() {
+        document.getElementById('authContainer').style.display = 'block';
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('userInfo').style.display = 'none';
+    }
+
+    function showDashboard() {
+        document.getElementById('authContainer').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        document.getElementById('userInfo').style.display = 'flex';
+        document.getElementById('usernameDisplay').innerText = currentUser || '';
+    }
+
+    // 选项卡切换
+    window.switchTab = function(tab) {
+        if (tab === 'login') {
+            document.getElementById('loginTab').classList.add('active');
+            document.getElementById('registerTab').classList.remove('active');
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+        } else {
+            document.getElementById('registerTab').classList.add('active');
+            document.getElementById('loginTab').classList.remove('active');
+            document.getElementById('registerForm').style.display = 'block';
+            document.getElementById('loginForm').style.display = 'none';
+        }
+    };
+
+    // ---------- 注册 ----------
+    window.handleRegister = async function(e) {
+        e.preventDefault();
+        const username = document.getElementById('regUsername').value.trim();
+        const password = document.getElementById('regPassword').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+
+        try {
+            const res = await fetch('/user/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, email })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('注册成功，请登录');
+                switchTab('login');
+                // 清空注册表单
+                document.getElementById('regUsername').value = '';
+                document.getElementById('regPassword').value = '';
+                document.getElementById('regEmail').value = '';
+            } else {
+                alert('注册失败：' + (data.message || '未知错误'));
+            }
+        } catch (err) {
+            alert('网络错误：' + err.message);
+        }
+    };
+
+    // ---------- 登录 ----------
+    window.handleLogin = async function(e) {
+        e.preventDefault();
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+
+        try {
+            const res = await fetch('/user/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            if (data.success) {
+                token = data.data.token;
+                currentUser = data.data.username;
+                localStorage.setItem('token', token);
+                localStorage.setItem('username', currentUser);
+                showDashboard();
+                loadRecords();
+                loadWeeklyChart();
+                // 清空登录表单
+                document.getElementById('loginUsername').value = '';
+                document.getElementById('loginPassword').value = '';
+            } else {
+                alert('登录失败：' + (data.message || '用户名或密码错误'));
+            }
+        } catch (err) {
+            alert('网络错误：' + err.message);
+        }
+    };
+
+    // ---------- 注销 ----------
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('username');
+        token = null;
+        currentUser = null;
+        showAuth();
+    });
+
+    // ---------- 通用请求函数（自动携带token） ----------
+    async function authenticatedFetch(url, options = {}) {
+        // 直接从 localStorage 获取 token，避免依赖全局变量
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('请先登录');
+            showAuth();
+            throw new Error('No token');
+        }
+        options.headers = {
+            ...options.headers,
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        };
+        const res = await fetch(url, options);
+        if (res.status === 401 || res.status === 403) {
+            alert('登录已过期，请重新登录');
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            // 更新全局变量（如果存在）
+            window.token = null;
+            window.currentUser = null;
+            showAuth();
+            throw new Error('Unauthorized');
+        }
+        return res;
+    }
+
+    // ---------- 加载所有记录 ----------
+    async function loadRecords() {
+        const listDiv = document.getElementById('recordsList');
+        listDiv.innerHTML = '<div class="loading">加载中...</div>';
+        try {
+            const res = await authenticatedFetch('/sleep-records');
+            const data = await res.json();
+            if (data.success) {
+                renderRecords(data.data);
+            } else {
+                listDiv.innerHTML = '<div class="empty-state">加载失败</div>';
+            }
+        } catch (err) {
+            listDiv.innerHTML = '<div class="empty-state">请求出错</div>';
+        }
+    }
+
+    function renderRecords(records) {
+        const listDiv = document.getElementById('recordsList');
+        if (!records || records.length === 0) {
+            listDiv.innerHTML = '<div class="empty-state">暂无睡眠记录，点击上方添加</div>';
+            return;
+        }
+        let html = '';
+        records.forEach(rec => {
+            const date = rec.date;
+            const start = rec.startTime.replace('T', ' ').substring(0,16);
+            const end = rec.endTime.replace('T', ' ').substring(0,16);
+            const duration = rec.durationMinutes;
+            const notes = rec.notes ? rec.notes : '';
+            html += `
+                <div class="record-item" data-id="${rec.id}">
+                    <div class="record-info">
+                        <span class="record-date">${date}</span>
+                        <span class="record-time">${start} → ${end}</span>
+                        <span class="record-duration">${formatDuration(duration)}</span>
+                        ${notes ? '<small>📝 ' + notes + '</small>' : ''}
+                    </div>
+                    <div class="record-actions">
+                        <button class="delete" onclick="deleteRecord(${rec.id})">删除</button>
+                    </div>
+                </div>
+            `;
+        });
+        listDiv.innerHTML = html;
+    }
+    // 格式化分钟为 "X小时Y分钟"
+    function formatDuration(minutes) {
+        if (!minutes || minutes === 0) return '0分钟';
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        let result = '';
+        if (hours > 0) result += hours + '小时';
+        if (mins > 0) result += mins + '分钟';
+        return result;
+    }
+
+    // ---------- 删除记录 ----------
+    window.deleteRecord = async function(id) {
+        if (!confirm('确定删除这条记录吗？')) return;
+        try {
+            const res = await authenticatedFetch('/sleep-records/' + id, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                loadRecords();      // 刷新列表
+                loadWeeklyChart();  // 刷新图表
+            } else {
+                alert('删除失败：' + data.message);
+            }
+        } catch (err) {
+            alert('操作失败');
+        }
+    };
+
+    // ---------- 添加记录（自动提取日期）----------
+    window.handleAddRecord = async function(e) {
+        e.preventDefault();
+        console.log('handleAddRecord called');
+        console.log('token from localStorage:', localStorage.getItem('token'));
+        const startTime = document.getElementById('startTime').value;
+        const endTime = document.getElementById('endTime').value;
+        const notes = document.getElementById('notes').value.trim() || null;
+
+        // 校验：结束时间必须晚于开始时间
+        if (new Date(endTime) <= new Date(startTime)) {
+            alert('醒来时间必须晚于入睡时间');
+            return;
+        }
+
+        // 从 startTime 中提取日期部分 (YYYY-MM-DD)
+        const date = startTime.split('T')[0];
+
+        // 构造 payload（时间格式需要和你的后端匹配）
+        const payload = {
+            date: date,
+            startTime: startTime + ':00',  // startTime 已经是 "YYYY-MM-DDTHH:mm"
+            endTime: endTime + ':00',      // 直接追加秒，保留 T 分隔符
+            notes
+        };
+
+        try {
+            const res = await authenticatedFetch('/sleep-records', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                // 清空表单
+                document.getElementById('startTime').value = '';
+                document.getElementById('endTime').value = '';
+                document.getElementById('notes').value = '';
+                loadRecords();
+                loadWeeklyChart();
+            } else {
+                alert('添加失败：' + (data.message || '未知错误'));
+            }
+        } catch (err) {
+            alert('操作失败：' + err.message);
+        }
+    };
+
+    // ---------- 加载最近7天图表 ----------
+    async function loadWeeklyChart() {
+        try {
+            const res = await authenticatedFetch('/sleep-records/weekly');
+            const data = await res.json();
+            if (data.success) {
+                renderChart(data.data);
+            } else {
+                console.error('图表数据加载失败');
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function renderChart(records) {
+        // 按日期聚合总时长，并存储每条记录的明细
+        const dateTotalMap = new Map();
+        const dateRecordsMap = new Map();
+
+        records.forEach(r => {
+            const date = r.date;
+            const minutes = r.durationMinutes || 0;
+            dateTotalMap.set(date, (dateTotalMap.get(date) || 0) + minutes);
+
+            if (!dateRecordsMap.has(date)) {
+                dateRecordsMap.set(date, []);
+            }
+            dateRecordsMap.get(date).push(r);
+        });
+
+        // 生成最近7天日期
+        const today = new Date();
+        const dates = [];
+        const values = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(today.getDate() - i);
+            const dateStr = d.toISOString().split('T')[0];
+            dates.push(dateStr);
+            values.push(dateTotalMap.get(dateStr) || 0);
+        }
+
+        const chartDom = document.getElementById('chart');
+        const myChart = echarts.init(chartDom);
+        const option = {
+            tooltip: {
+                trigger: 'axis',
+                formatter: function(params) {
+                    const data = params[0];
+                    const date = data.name;
+                    const dayRecords = dateRecordsMap.get(date) || [];
+                    if (dayRecords.length === 0) {
+                        return date + '<br/>无睡眠记录';
+                    }
+                    let html = `<b>${date}</b><br/>`;
+                    dayRecords.forEach((r, index) => {
+                        const start = r.startTime.replace('T', ' ').substring(0,16);
+                        const end = r.endTime.replace('T', ' ').substring(0,16);
+                        const dur = r.durationMinutes;
+                        const hours = Math.floor(dur / 60);
+                        const mins = dur % 60;
+                        let durStr = '';
+                        if (hours > 0) durStr += hours + '小时';
+                        if (mins > 0) durStr += mins + '分钟';
+                        html += `${index+1}. ${start} → ${end} (${durStr})<br/>`;
+                    });
+                    return html;
+                }
+            },
+            xAxis: {
+                type: 'category',
+                data: dates,
+                name: '日期'
+            },
+            yAxis: {
+                type: 'value',
+                name: '分钟',
+                axisLabel: {
+                    formatter: function(value) {
+                        const hours = Math.floor(value / 60);
+                        const mins = value % 60;
+                        if (hours > 0 && mins === 0) {
+                            return value + ' (' + hours + 'h)';
+                        } else if (hours > 0) {
+                            return value + ' (' + hours + 'h' + mins + 'm)';
+                        }
+                        return value + 'm';
+                    }
+                }
+            },
+            series: [{
+                name: '睡眠时长',
+                type: 'bar',
+                data: values,
+                itemStyle: { color: '#1e2b3c' },
+                label: {
+                    show: true,
+                    position: 'top',
+                    formatter: function(params) {
+                        const minutes = params.value;
+                        const hours = Math.floor(minutes / 60);
+                        const mins = minutes % 60;
+                        let str = '';
+                        if (hours > 0) str += hours + 'h';
+                        if (mins > 0) str += mins + 'm';
+                        return str || '0m';
+                    }
+                }
+            }],
+            grid: { top: 50, bottom: 20, left: 60, right: 20 }
+        };
+        myChart.setOption(option);
+    }
+</script>
+</body>
+</html>
